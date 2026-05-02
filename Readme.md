@@ -3,7 +3,7 @@
 
 > Spontaneous real-world connection — discover interesting people nearby who are open to meeting right now.
 
-![Landing Page](screenshots/landing.jpg)
+![Landing Page](Screenshots/landing.jpg)
 
 ---
 
