@@ -13,14 +13,6 @@
 
 ---
 
-## Screenshots
-
-| Landing Page | Login |
-|---|---|
-| ![Landing](screenshots/landing.jpg) | ![Login](screenshots/login.jpg) |
-
----
-
 ## Features
 
 - **Live presence map** — dark-themed real-time map with custom glowing mood-colored avatar markers
@@ -98,7 +90,7 @@ Mood compatibility is determined by a lookup table — e.g. `chill` pairs well w
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/i-am-here.git
+git clone https://github.com/YashRawt/RandomMeet.git
 cd i-am-here
 
 # Install all workspace dependencies
