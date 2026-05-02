@@ -1,0 +1,872 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: I AM HERE - Real-world random meet platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User profile operations
+  - name: sessions
+    description: Live presence sessions
+  - name: pings
+    description: Ping connection system
+  - name: safety
+    description: Report and block operations
+  - name: matches
+    description: AI matching and compatibility
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/signup:
+    post:
+      operationId: signup
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/profile:
+    put:
+      operationId: updateProfile
+      tags: [users]
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/{userId}:
+    get:
+      operationId: getUserById
+      tags: [users]
+      summary: Get a user's public profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicUser"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sessions:
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Create a live presence session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionBody"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      operationId: getMySession
+      tags: [sessions]
+      summary: Get my active session
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: My active session or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionOrNull"
+
+  /sessions/nearby:
+    get:
+      operationId: getNearbySessions
+      tags: [sessions]
+      summary: Get nearby active user sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: radiusKm
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 3
+      responses:
+        "200":
+          description: List of nearby sessions (with approximate location)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NearbySession"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sessions/{sessionId}:
+    delete:
+      operationId: deleteSession
+      tags: [sessions]
+      summary: End/delete a session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /pings:
+    post:
+      operationId: sendPing
+      tags: [pings]
+      summary: Send a ping to a nearby user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendPingBody"
+      responses:
+        "201":
+          description: Ping sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ping"
+        "429":
+          description: Too many pings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      operationId: getMyPings
+      tags: [pings]
+      summary: Get my pings (sent and received)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: My pings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PingsResponse"
+
+  /pings/{pingId}/respond:
+    post:
+      operationId: respondToPing
+      tags: [pings]
+      summary: Accept or reject a ping
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pingId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RespondPingBody"
+      responses:
+        "200":
+          description: Ping response recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ping"
+        "404":
+          description: Ping not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /safety/report:
+    post:
+      operationId: reportUser
+      tags: [safety]
+      summary: Report a user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportUserBody"
+      responses:
+        "201":
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /safety/block:
+    post:
+      operationId: blockUser
+      tags: [safety]
+      summary: Block a user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockUserBody"
+      responses:
+        "201":
+          description: User blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /safety/blocked:
+    get:
+      operationId: getBlockedUsers
+      tags: [safety]
+      summary: Get list of blocked users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Blocked users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BlockedUser"
+
+  /matches/suggestions:
+    get:
+      operationId: getMatchSuggestions
+      tags: [matches]
+      summary: Get AI-powered top 3 match suggestions nearby
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Top 3 match suggestions with compatibility scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchSuggestion"
+
+  /matches/stats:
+    get:
+      operationId: getNearbyStats
+      tags: [matches]
+      summary: Get stats about nearby users (mood distribution, active count)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Nearby stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NearbyStats"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    SignupBody:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        username:
+          type: string
+          minLength: 3
+      required:
+        - name
+        - email
+        - password
+        - username
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        username:
+          type: string
+        bio:
+          type: string
+          nullable: true
+        interests:
+          type: array
+          items:
+            type: string
+        mood:
+          type: string
+          nullable: true
+        profilePic:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - username
+        - interests
+        - createdAt
+
+    PublicUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        username:
+          type: string
+        bio:
+          type: string
+          nullable: true
+        interests:
+          type: array
+          items:
+            type: string
+        mood:
+          type: string
+          nullable: true
+        profilePic:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+        - username
+        - interests
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        name:
+          type: string
+        bio:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+        mood:
+          type: string
+        profilePic:
+          type: string
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        lat:
+          type: number
+        lng:
+          type: number
+        placeName:
+          type: string
+          nullable: true
+        status:
+          type: string
+        mood:
+          type: string
+        durationMinutes:
+          type: integer
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - lat
+        - lng
+        - status
+        - mood
+        - durationMinutes
+        - expiresAt
+        - createdAt
+
+    SessionOrNull:
+      type: object
+      properties:
+        session:
+          $ref: "#/components/schemas/Session"
+          nullable: true
+      required:
+        - session
+
+    CreateSessionBody:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+        placeName:
+          type: string
+        status:
+          type: string
+        mood:
+          type: string
+        durationMinutes:
+          type: integer
+          minimum: 15
+          maximum: 480
+      required:
+        - lat
+        - lng
+        - status
+        - mood
+        - durationMinutes
+
+    NearbySession:
+      type: object
+      properties:
+        id:
+          type: integer
+        user:
+          $ref: "#/components/schemas/PublicUser"
+        approxLat:
+          type: number
+        approxLng:
+          type: number
+        placeName:
+          type: string
+          nullable: true
+        status:
+          type: string
+        mood:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        distanceKm:
+          type: number
+      required:
+        - id
+        - user
+        - approxLat
+        - approxLng
+        - status
+        - mood
+        - expiresAt
+        - distanceKm
+
+    Ping:
+      type: object
+      properties:
+        id:
+          type: integer
+        senderId:
+          type: integer
+        receiverId:
+          type: integer
+        senderSessionId:
+          type: integer
+          nullable: true
+        receiverSessionId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        message:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        sender:
+          $ref: "#/components/schemas/PublicUser"
+          nullable: true
+        receiver:
+          $ref: "#/components/schemas/PublicUser"
+          nullable: true
+        revealedLat:
+          type: number
+          nullable: true
+        revealedLng:
+          type: number
+          nullable: true
+      required:
+        - id
+        - senderId
+        - receiverId
+        - status
+        - createdAt
+
+    PingsResponse:
+      type: object
+      properties:
+        received:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ping"
+        sent:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ping"
+      required:
+        - received
+        - sent
+
+    SendPingBody:
+      type: object
+      properties:
+        receiverId:
+          type: integer
+        message:
+          type: string
+      required:
+        - receiverId
+
+    RespondPingBody:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [accept, reject]
+      required:
+        - action
+
+    ReportUserBody:
+      type: object
+      properties:
+        reportedUserId:
+          type: integer
+        reason:
+          type: string
+      required:
+        - reportedUserId
+        - reason
+
+    BlockUserBody:
+      type: object
+      properties:
+        blockedUserId:
+          type: integer
+      required:
+        - blockedUserId
+
+    BlockedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        blockedUserId:
+          type: integer
+        blockedUser:
+          $ref: "#/components/schemas/PublicUser"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - blockedUserId
+        - createdAt
+
+    MatchSuggestion:
+      type: object
+      properties:
+        session:
+          $ref: "#/components/schemas/NearbySession"
+        compatibilityScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        reasons:
+          type: array
+          items:
+            type: string
+      required:
+        - session
+        - compatibilityScore
+        - reasons
+
+    NearbyStats:
+      type: object
+      properties:
+        totalActive:
+          type: integer
+        moodBreakdown:
+          type: object
+          additionalProperties:
+            type: integer
+        avgDistanceKm:
+          type: number
+      required:
+        - totalActive
+        - moodBreakdown
