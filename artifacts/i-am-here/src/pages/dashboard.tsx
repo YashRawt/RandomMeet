@@ -22,7 +22,7 @@ import { Loader2, AlertTriangle, Send, X, Zap, Users, Radio } from "lucide-react
 
 const MAPBOX_TOKEN =
   import.meta.env.VITE_MAPBOX_TOKEN ||
-  "pk.eyJ1IjoicmVwbGl0LWFza2xpbmUiLCJhIjoiY2x6cHVwdWZ6MDN6MjJ2bXh3eTNrZmxjZCJ9.tM-Zc9L0wOa9gHk3-uVXXQ";
+  "ENTER HERE";
 
 const MOOD_COLORS: Record<string, string> = {
   chill:      "#8b5cf6",
